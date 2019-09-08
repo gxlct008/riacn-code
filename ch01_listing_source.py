@@ -145,7 +145,9 @@ def article_vote(conn, user, article):
 
     # 如果用户是第一次为这篇文章投票，那么增加这篇文章的投票数量和评分。
     if conn.sadd('voted:' + article_id, user):
-        conn.zincrby('score:', article, VOTE_SCORE)
+        # conn.zincrby('score:', article, VOTE_SCORE)
+        # Redis > 3.0 需要调换参数的位置，改为如下写法
+        conn.zincrby('score:', VOTE_SCORE, article)
         conn.hincrby(article, 'votes', 1)
 # <end id="upvote-code"/>
 
@@ -174,8 +176,11 @@ def post_article(conn, user, title, link):
     })
 
     # 将文章添加到根据发布时间排序的有序集合和根据评分排序的有序集合里面。
-    conn.zadd('score:', article, now + VOTE_SCORE)
-    conn.zadd('time:', article, now) 
+    # conn.zadd('score:', article, now + VOTE_SCORE)
+    # conn.zadd('time:', article, now)
+    # Redis > 3.0 需要将参数写成 map 格式，改为如下写法
+    conn.zadd('score:', {article: now + VOTE_SCORE})
+    conn.zadd('time:', {article: now})
 
     return article_id
 # <end id="post-article-code"/>
